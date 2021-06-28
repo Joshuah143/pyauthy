@@ -1,0 +1,17 @@
+{
+	"Bell": "@txt.bell.ca",
+	"Solo": "@txt.bell.ca",
+	"Chatr": "@pcs.rogers.com",
+	"Rogers": "@pcs.rogers.com",
+	"Tbaytel": "@pcs.rogers.com",
+	"Eastlink": "@txt.eastlink.ca",
+	"Fido": "@fido.ca",
+	"Koodo": "@msg.koodomobile.com",
+	"MTS": "@text.mtsmobility.com",
+	"PC": "@mobiletxt.ca",
+	"Public": "@msg.telus.com",
+	"Sasktel": "@sms.sasktel.com",
+	"TELUS": "@msg.telus.com",
+	"Virgin": "@vmobile.ca",
+	"WIND": "@txt.windmobile.ca"
+}
