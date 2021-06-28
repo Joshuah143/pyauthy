@@ -102,8 +102,9 @@ class Auth:
             print(f'FAILED TO SEND TEXT:\n{e}')
             return False
 
-    def emailtext(self):
-        pass
+    def email_auth(self, email):
+        self._gen_code()
+        self.passed = self.sendemail(message=self._code, destination=email)
 
     def email_text_auth(self, carier, number):
         self._gen_code()
@@ -128,7 +129,7 @@ class Auth:
         server = smtplib.SMTP_SSL(f'{self._default_smtp_server}', 465)
         if standardemail:
             emailintro = "Hi,"
-            emailextro = f"Regards,\n{self._default_name}\n\n\n This email was automatically sent with python, if there is any errors please email me back at '{default_email}'"
+            emailextro = f"Regards,\n{self._default_name}\n\n\n This email was automatically sent with python, if there is any errors please email me back at '{self._gmail_user}'"
             message = f"""Subject: Auth from {self._default_name}
             From: {self._default_name}
             {emailintro}
