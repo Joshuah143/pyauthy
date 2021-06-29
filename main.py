@@ -167,23 +167,14 @@ class Auth:
             self.period = 30
             self.issuer = issuer
             self.user = username
-            self.count = int(time.time() // 30)
+            self.count = int(time.time() // self.period)
 
-        def totpnow(self):
-            hasher = hmac.new(base64.b32decode(self.key, casefold=True), self.int_to_bytestring(),
-                              hashlib.sha1)
-            print(bytearray(hasher.digest()))
-            print('key', self.key)
-            print('haserh', hasher)
-            code = (hasher % 10) ** self.digits
-            print('FUCK YEAH')
-
-        def generate_otp(self) -> str:
+        def generate_otp(self, count_offset=0) -> str:
             """
             :param input: the HMAC counter value to use as the OTP input.
                 Usually either the counter, or the computed integer based on the Unix timestamp
             """
-            input = self.count
+            input = self.count + count_offset
             if input < 0:
                 raise ValueError('input must be positive integer')
             hasher = hmac.new(self.byte_secret(), self.int_to_bytestring(input), hashlib.sha1)
@@ -198,12 +189,16 @@ class Auth:
                 str_code = '0' + str_code
             return str_code
 
+        def genthree(self):
+            return [self.generate_otp(-1), self.generate_otp(), self.generate_otp(1)]
+
         def byte_secret(self) -> bytes:
             secret = self.key
             missing_padding = len(self.key) % 8
             if missing_padding != 0:
                 secret += '=' * (8 - missing_padding)
             return base64.b32decode(secret, casefold=True)
+        # todo: add method to find a 3 set
 
         def gentotpkey(self):
             key = ''
@@ -214,19 +209,6 @@ class Auth:
             self.key = key
 
         def qrcode(self):
-            'otpauth://totp/JOSHUAH:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=JOSHUAH&algorithm=SHA1&digits=6&period=30'
-            '''mylink = 'otpauth://totp/'  # adds totp label 
-            mylink += f'{self.user}'  # suername
-            mylink += '?secret='
-            mylink += f'{self.key}'  # the key to originate it (SHA1 Hash)
-            mylink += '&issuer='
-            mylink += f'{self.issuer}'  # issueragain
-            mylink += '&algorithm='
-            mylink += 'SHA1'  # algorith used, just use fucknng SHA 1 to make life easy
-            mylink += '&digits='
-            mylink += f'{self.digits}'  # length of totp challange
-            mylink += '&period='
-            mylink += f'{self.period}'  # length of valid time for TOTP token''' #todo: clean this shit up
             mylink = f'otpauth://totp/{self.user}&issuer={self.issuer}&algorithm=SHA1&digits={self.digits}&period={self.period}'
             self.link = mylink
             with open('QR_code.png', 'w'):
