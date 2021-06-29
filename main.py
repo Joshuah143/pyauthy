@@ -1,6 +1,8 @@
 import base64
 import hmac
 import smtplib
+from typing import Optional, Any
+
 import twilio.rest as twil
 import random
 import json
@@ -165,16 +167,43 @@ class Auth:
             self.period = 30
             self.issuer = issuer
             self.user = username
+            self.count = int(time.time() // 30)
 
         def totpnow(self):
-            timesince = int(time.time() / 30)
-            hasher = hmac.new(base64.b32decode(self.key, casefold=True), self.int_to_bytestring(i=timesince),
+            hasher = hmac.new(base64.b32decode(self.key, casefold=True), self.int_to_bytestring(),
                               hashlib.sha1)
             print(bytearray(hasher.digest()))
             print('key', self.key)
             print('haserh', hasher)
             code = (hasher % 10) ** self.digits
             print('FUCK YEAH')
+
+        def generate_otp(self) -> str:
+            """
+            :param input: the HMAC counter value to use as the OTP input.
+                Usually either the counter, or the computed integer based on the Unix timestamp
+            """
+            input = self.count
+            if input < 0:
+                raise ValueError('input must be positive integer')
+            hasher = hmac.new(self.byte_secret(), self.int_to_bytestring(input), hashlib.sha1)
+            hmac_hash = bytearray(hasher.digest())
+            offset = hmac_hash[-1] & 0xf
+            code = ((hmac_hash[offset] & 0x7f) << 24 |
+                    (hmac_hash[offset + 1] & 0xff) << 16 |
+                    (hmac_hash[offset + 2] & 0xff) << 8 |
+                    (hmac_hash[offset + 3] & 0xff))
+            str_code = str(code % 10 ** self.digits)
+            while len(str_code) < self.digits:
+                str_code = '0' + str_code
+            return str_code
+
+        def byte_secret(self) -> bytes:
+            secret = self.key
+            missing_padding = len(self.key) % 8
+            if missing_padding != 0:
+                secret += '=' * (8 - missing_padding)
+            return base64.b32decode(secret, casefold=True)
 
         def gentotpkey(self):
             key = ''
@@ -186,7 +215,7 @@ class Auth:
 
         def qrcode(self):
             'otpauth://totp/JOSHUAH:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=JOSHUAH&algorithm=SHA1&digits=6&period=30'
-            mylink = 'otpauth://totp/'  # adds totp label
+            '''mylink = 'otpauth://totp/'  # adds totp label 
             mylink += f'{self.user}'  # suername
             mylink += '?secret='
             mylink += f'{self.key}'  # the key to originate it (SHA1 Hash)
@@ -197,23 +226,25 @@ class Auth:
             mylink += '&digits='
             mylink += f'{self.digits}'  # length of totp challange
             mylink += '&period='
-            mylink += f'{self.period}'  # length of valid time for TOTP token
+            mylink += f'{self.period}'  # length of valid time for TOTP token''' #todo: clean this shit up
+            mylink = f'otpauth://totp/{self.user}&issuer={self.issuer}&algorithm=SHA1&digits={self.digits}&period={self.period}'
             self.link = mylink
             with open('QR_code.png', 'w'):
                 p = make(mylink)
                 p.save('test.png')  # save png QR code
-            return mylink
+            return mylink, self.key
 
-        def int_to_bytestring(self, i: int, padding: int = 8) -> bytes:
+        def int_to_bytestring(self, padding: int = 8) -> bytes:
+            _i = self.count
             """
             Turns an integer to the OATH specified
             bytestring, which is fed to the HMAC
             along with the secret
             """
             result = bytearray()
-            while i != 0:
-                result.append(i & 0xFF)
-                i >>= 8
+            while _i != 0:
+                result.append(_i & 0xFF)
+                _i >>= 8
             return bytes(bytearray(reversed(result)).rjust(padding, b'\0'))
 
         def getkey(self):
@@ -248,8 +279,9 @@ if False:
     test.check_code()
 
 if 1:
-    test = Auth.TOTP()
-    # test.totpnow()
+    test = Auth.TOTP(key='5THY2U2POIFIJQMLSGQER5ZBONFLHTAJ')
+    #test.totpnow()
+    print(test.generate_otp())
     print(test.qrcode())
 
 if 0:
@@ -262,65 +294,9 @@ if 0:
     check = test.check_number()
 
 
-print(hashlib.sha1(str('this is a test').encode()))
-print(hashlib.sha1((176).to_bytes(32, 'little')).digest())
+#print(hashlib.sha1(str('this is a test').encode()))
+#print(hashlib.sha1((176).to_bytes(32, 'little')).digest())
 
 tracking_number = 280697270107
 number_to_call = 18004633339
 ama_guy = 4033831565
-
-
-class OTP(object):
-    """
-    Base class for OTP handlers.
-    """
-    def __init__(self, s: str, digits: int = 6, digest: Any = hashlib.sha1, name: Optional[str] = None,
-                 issuer: Optional[str] = None) -> None:
-        self.digits = digits
-        self.digest = digest
-        self.secret = s
-        self.name = name or 'Secret'
-        self.issuer = issuer
-
-    def generate_otp(self, input: int) -> str:
-        """
-        :param input: the HMAC counter value to use as the OTP input.
-            Usually either the counter, or the computed integer based on the Unix timestamp
-        """
-        if input < 0:
-            raise ValueError('input must be positive integer')
-        hasher = hmac.new(self.byte_secret(), self.int_to_bytestring(input), self.digest)
-        hmac_hash = bytearray(hasher.digest())
-        offset = hmac_hash[-1] & 0xf
-        code = ((hmac_hash[offset] & 0x7f) << 24 |
-                (hmac_hash[offset + 1] & 0xff) << 16 |
-                (hmac_hash[offset + 2] & 0xff) << 8 |
-                (hmac_hash[offset + 3] & 0xff))
-        str_code = str(code % 10 ** self.digits)
-        while len(str_code) < self.digits:
-            str_code = '0' + str_code
-
-        return str_code
-
-    def byte_secret(self) -> bytes:
-        secret = self.secret
-        missing_padding = len(secret) % 8
-        if missing_padding != 0:
-            secret += '=' * (8 - missing_padding)
-        return base64.b32decode(secret, casefold=True)
-
-    @staticmethod
-    def int_to_bytestring(i: int, padding: int = 8) -> bytes:
-        """
-        Turns an integer to the OATH specified
-        bytestring, which is fed to the HMAC
-        along with the secret
-        """
-        result = bytearray()
-        while i != 0:
-            result.append(i & 0xFF)
-            i >>= 8
-        # It's necessary to convert the final result from bytearray to bytes
-        # because the hmac functions in python 2.6 and 3.3 don't work with
-        # bytearray
-        return bytes(bytearray(reversed(result)).rjust(padding, b'\0'))
