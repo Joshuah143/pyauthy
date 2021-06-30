@@ -1,15 +1,13 @@
 import base64
 import hmac
 import smtplib
-from typing import Optional, Any
-
 import twilio.rest as twil
 import random
-import json
 import datetime
 import hashlib
 from qrcode import make
 import time
+import os
 
 
 class Auth:
@@ -17,11 +15,11 @@ class Auth:
                  trys=3,
                  digits=6,
                  numsonly=True,
-                 sid="ACee46d15aee42ece35152b01a0cf0db61",
-                 tokensid='a16dc9df73edf829357d5354e5802147',
+                 sid=os.environ['TwillioSID'],
+                 tokensid=os.environ['Twilliotoken'],
                  default_smtp_server="smtp.gmail.com",
                  gmail_user='joshuahimmens@gmail.com',
-                 gmail_password='mmslnuunnmvhvomt',
+                 gmail_password=os.environ['gmailpassword'],
                  default_name='Joshua Himmens'):
         self.sid = sid
         self.tokensid = tokensid
@@ -50,9 +48,6 @@ class Auth:
         self._gmail_user = gmail_user
         self._gmail_password = gmail_password
         self._default_name = default_name
-
-    def emailaith(self):
-        pass
 
     def textauth(self, phonenum: str = None, kind=1, car=None):
         self.orginalnum = phonenum
@@ -99,7 +94,8 @@ class Auth:
 
     def twilliotext(self, number):
         try:
-            print(twil.Client(self.sid, self.tokensid).messages.create(body=self._code,
+            print(twil.Client(self.sid,
+                              self.tokensid).messages.create(body=self._code,
                                                                        from_='+15873285525',
                                                                        to=number).sid)
             return True
@@ -117,6 +113,7 @@ class Auth:
         dns = '.'.join(nuber)
         dns += '.e164.arpa'
         print(dns)
+        # todo: work with daniel on VIOP lookup
 
     def email_text_auth(self, carier, number):
         self._gen_code()
@@ -140,7 +137,8 @@ class Auth:
         server = smtplib.SMTP_SSL(f'{self._default_smtp_server}', 465)
         if standardemail:
             emailintro = "Hi,"
-            emailextro = f"Regards,\n{self._default_name}\n\n\n This email was automatically sent with python, if there is any errors please email me back at '{self._gmail_user}'"
+            emailextro = f"Regards,\n{self._default_name}\n\n\n This email was automatically sent with python," \
+                         f" if there is any errors please email me back at '{self._gmail_user}'"
             message = f"""Subject: Auth from {self._default_name}
             From: {self._default_name}
             {emailintro}
@@ -156,81 +154,6 @@ class Auth:
         except Exception as e:
             print("email failed" + str(e))
             return False
-
-    class TOTP:
-        def __init__(self, issuer='JoshuaH', key=0, username='joshua.himmens@icloud.com'):
-            if key == 0:
-                self.gentotpkey()
-            else:
-                self.key = key
-            self.digits = 6
-            self.period = 30
-            self.issuer = issuer
-            self.user = username
-            self.count = int(time.time() // self.period)
-
-        def generate_otp(self, count_offset=0) -> str:
-            """
-            :param input: the HMAC counter value to use as the OTP input.
-                Usually either the counter, or the computed integer based on the Unix timestamp
-            """
-            input = self.count + count_offset
-            if input < 0:
-                raise ValueError('input must be positive integer')
-            hasher = hmac.new(self.byte_secret(), self.int_to_bytestring(input), hashlib.sha1)
-            hmac_hash = bytearray(hasher.digest())
-            offset = hmac_hash[-1] & 0xf
-            code = ((hmac_hash[offset] & 0x7f) << 24 |
-                    (hmac_hash[offset + 1] & 0xff) << 16 |
-                    (hmac_hash[offset + 2] & 0xff) << 8 |
-                    (hmac_hash[offset + 3] & 0xff))
-            str_code = str(code % 10 ** self.digits)
-            while len(str_code) < self.digits:
-                str_code = '0' + str_code
-            return str_code
-
-        def genthree(self):
-            return [self.generate_otp(-1), self.generate_otp(), self.generate_otp(1)]
-
-        def byte_secret(self) -> bytes:
-            secret = self.key
-            missing_padding = len(self.key) % 8
-            if missing_padding != 0:
-                secret += '=' * (8 - missing_padding)
-            return base64.b32decode(secret, casefold=True)
-        # todo: add method to find a 3 set
-
-        def gentotpkey(self):
-            key = ''
-            choices = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ234567')
-            for _ in range(32):
-                key += random.choice(choices)
-            print(key)
-            self.key = key
-
-        def qrcode(self):
-            mylink = f'otpauth://totp/{self.user}&issuer={self.issuer}&algorithm=SHA1&digits={self.digits}&period={self.period}'
-            self.link = mylink
-            with open('QR_code.png', 'w'):
-                p = make(mylink)
-                p.save('test.png')  # save png QR code
-            return mylink, self.key
-
-        def int_to_bytestring(self, padding: int = 8) -> bytes:
-            _i = self.count
-            """
-            Turns an integer to the OATH specified
-            bytestring, which is fed to the HMAC
-            along with the secret
-            """
-            result = bytearray()
-            while _i != 0:
-                result.append(_i & 0xFF)
-                _i >>= 8
-            return bytes(bytearray(reversed(result)).rjust(padding, b'\0'))
-
-        def getkey(self):
-            return self.key
 
     def check_code(self, checker: str = None):
         if self.trys > 0:
@@ -249,36 +172,69 @@ class Auth:
             print('FAILED')
             return False
 
-
-if False:
-    test = Auth()
-    test.textauth('+1(587)-434-0118')
-    test.check_code()
-
-if False:
-    test = Auth()
-    test.textauth(kind=2, phonenum='+1(587)-434-0118', car='Bell')
-    test.check_code()
-
-if 1:
-    test = Auth.TOTP(key='5THY2U2POIFIJQMLSGQER5ZBONFLHTAJ')
-    #test.totpnow()
-    print(test.generate_otp())
-    print(test.qrcode())
-
-if 0:
-    test = Auth()
-    check = test.check_number()
-
-if 0:
-    test = Auth()
-    test.email_auth('joshua.himmens@icloud.com')
-    check = test.check_number()
+    class TOTP:
+        def __init__(self, key: str = 0, issuer='JoshuaH', username='joshua.himmens@icloud.com'):
+            if key == 0:
+                self.gentotpkey()
+            else:
+                self.key = key
+            self.digits = 6
+            self.period = 30
+            self.issuer = issuer
+            self.user = username
+            self.digest = hashlib.sha1
 
 
-#print(hashlib.sha1(str('this is a test').encode()))
-#print(hashlib.sha1((176).to_bytes(32, 'little')).digest())
+        def getkey(self):
+            return self.key
 
-tracking_number = 280697270107
-number_to_call = 18004633339
-ama_guy = 4033831565
+        def genthree(self):
+            return [self.generate_otp(-1), self.generate_otp(), self.generate_otp(1)]
+
+        def gentotpkey(self):
+            key = ''
+            choices = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ234567')
+            for _ in range(32):
+                key += random.choice(choices)
+            print(key)
+            self.key = key
+
+        def qrcode(self):
+            with open('QR_code.png', 'w'):
+                p = make(self.link)
+                p.save('test.png')  # save png QR code
+            return self.link
+
+        @property
+        def link(self):
+            return f'otpauth://totp/{self.user}?secret={self.key}&issuer={self.issuer}' \
+                   f'&algorithm=SHA1&digits={self.digits}&period={self.period}'
+
+        @property
+        def count(self):
+            return int(time.mktime(datetime.datetime.now().timetuple()) // self.period)
+
+        def generate_otp(self, offset: int = 0) -> str:
+            hasher = hmac.new(self.byte_secret(), self.int_to_bytestring(offset=offset), self.digest)
+            hmac_hash = bytearray(hasher.digest())
+            offset = hmac_hash[-1] & 0xf
+            code = ((hmac_hash[offset] & 0x7f) << 24 |
+                    (hmac_hash[offset + 1] & 0xff) << 16 |
+                    (hmac_hash[offset + 2] & 0xff) << 8 |
+                    (hmac_hash[offset + 3] & 0xff))
+            str_code = str(code % 10 ** self.digits)
+            while len(str_code) < self.digits:
+                    str_code = '0' + str_code
+            return str_code
+
+        def byte_secret(self):
+            secret = self.key
+            missing_padding = len(self.key) % 8
+            if missing_padding != 0:
+                secret += '=' * (8 - missing_padding)
+            return base64.b32decode(secret, casefold=True)
+
+        def int_to_bytestring(self, offset: int = 0, padding: int = 8):
+            return (self.count + offset).to_bytes(padding, 'big')
+
+
