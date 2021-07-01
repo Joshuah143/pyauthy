@@ -1,4 +1,4 @@
-import base64
+from base64 import b32decode
 import hmac
 import smtplib
 import twilio.rest as twil
@@ -96,8 +96,8 @@ class Auth:
         try:
             print(twil.Client(self.sid,
                               self.tokensid).messages.create(body=self._code,
-                                                                       from_='+15873285525',
-                                                                       to=number).sid)
+                                                             from_='+15873285525',
+                                                             to=number).sid)
             return True
         except Exception as e:
             print(f'FAILED TO SEND TEXT:\n{e}')
@@ -172,6 +172,65 @@ class Auth:
             print('FAILED')
             return False
 
+    class Passwords:
+        def __init__(self, password: str = ''):
+            self.password = password
+
+        def passwordcheck(self, password:str=None):
+            if password is None:
+                password = self.password
+            password_score = 0
+            possbile = 0
+            checkfor = ['QWERTYUIOPASDFGHJKLZXCVBNM',
+                        'qwertyuioplkjhgfdsazxcvbnm',
+                        '1234567890',
+                        '!@#$%^&*()-_`~][{}\\|:;"\',.<>/?']
+            for currentcheck in checkfor:
+                if self.checkanyin(password, list(currentcheck)):
+                    password_score += 2
+                    possbile += 2
+                else:
+                    possbile += 2
+            incremnts = [0, 5, 10, 15, 25, 30]
+            for i in incremnts:
+                if len(password) >= i:
+                    possbile += 1
+                    password_score += 1
+                else:
+                    possbile += 1
+            return password_score/possbile
+
+        @staticmethod
+        def checkanyin(origin: str, checklist: list):
+            for i in checklist:
+                if i in origin:
+                    return True
+            return False
+
+        def passwordgen(self,
+                        length: int = 30,
+                        ambigous: bool = False,
+                        numbers: bool = True,
+                        capsletters: bool = True,
+                        specialcharters: bool = True,
+                        lowercase: bool = True):
+            pool = []
+            if numbers:
+                pool += (list('1234567890'))
+            if capsletters:
+                pool += (list('QWERTYUIOPASDFGHJKLZXCVBNM'))
+            if lowercase:
+                pool += (list('qwertyuioplkjhgfdsazxcvbnm'))
+            if specialcharters:
+                pool += (list('!@#$%^&*()-_`~][{}\\|:;"\',.<>/?'))
+            if ambigous:
+                pass
+            _result = ''
+            for _ in range(length):
+                _result += str(random.choice(pool))
+            self.password = _result
+            return _result
+
     class TOTP:
         def __init__(self, key: str = 0, issuer='JoshuaH', username='joshua.himmens@icloud.com'):
             if key == 0:
@@ -184,16 +243,17 @@ class Auth:
             self.user = username
             self.digest = hashlib.sha1
 
-
+        @property
         def getkey(self):
             return self.key
 
+        @property
         def genthree(self):
             return [self.generate_otp(-1), self.generate_otp(), self.generate_otp(1)]
 
         def gentotpkey(self):
             key = ''
-            choices = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ234567')
+            choices = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789')
             for _ in range(32):
                 key += random.choice(choices)
             print(key)
@@ -224,7 +284,7 @@ class Auth:
                     (hmac_hash[offset + 3] & 0xff))
             str_code = str(code % 10 ** self.digits)
             while len(str_code) < self.digits:
-                    str_code = '0' + str_code
+                str_code = '0' + str_code
             return str_code
 
         def byte_secret(self):
@@ -232,9 +292,7 @@ class Auth:
             missing_padding = len(self.key) % 8
             if missing_padding != 0:
                 secret += '=' * (8 - missing_padding)
-            return base64.b32decode(secret, casefold=True)
+            return b32decode(secret, casefold=True)
 
         def int_to_bytestring(self, offset: int = 0, padding: int = 8):
             return (self.count + offset).to_bytes(padding, 'big')
-
-
