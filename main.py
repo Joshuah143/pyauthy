@@ -296,3 +296,5 @@ class Auth:
 
         def int_to_bytestring(self, offset: int = 0, padding: int = 8):
             return (self.count + offset).to_bytes(padding, 'big')
+
+        #todo: add backup codes and export backup codes to pdf
