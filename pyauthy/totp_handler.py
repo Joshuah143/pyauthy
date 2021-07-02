@@ -5,10 +5,10 @@ import hmac
 import datetime
 from qrcode import make
 from base64 import b32decode
-import Backupcodes
+import backupcodes
 
 
-class TOTP:
+class totp:
     def __init__(self,
                  key: str = 0,
                  issuer: str = 'JoshuaH',
@@ -24,7 +24,7 @@ class TOTP:
         self.issuer = issuer
         self.user = username
         self.digest = hashlib.sha1
-        self.backup = Backupcodes.BackupCodes(unused_backup_codes, used_backup_codes)
+        self.backup = backupcodes.backupcodes(unused_backup_codes, used_backup_codes)
 
     def check_otp(self, given: str or int) -> bool:
         given = str(given)

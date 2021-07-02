@@ -1,7 +1,7 @@
 import random
 
 
-class BackupCodes:
+class backupcodes:
     def __init__(self, unused_codes: list = None, used_codes: list = None):
         if used_codes is None:
             self.used_codes = []
