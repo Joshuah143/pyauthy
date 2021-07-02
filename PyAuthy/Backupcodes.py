@@ -2,12 +2,12 @@ import random
 
 
 class BackupCodes:
-    def __init__(self, used_codes: list = (), unused_codes: list = ()):
-        if type(used_codes) == tuple:
+    def __init__(self, unused_codes: list = None, used_codes: list = None):
+        if used_codes is None:
             self.used_codes = []
         else:
             self.used_codes = list(used_codes)
-        if type(unused_codes) == tuple:
+        if unused_codes is None:
             self.unused_codes = []
         else:
             self.unused_codes = list(unused_codes)
@@ -15,7 +15,7 @@ class BackupCodes:
     def gencodes(self, number_of_codes: int = 6,
                  code_length: int = 8,
                  nums: bool = True,
-                 alpha: bool = False):
+                 alpha: bool = False) -> list:
         if (not nums) and (not alpha):
             raise Exception
         pool = []
@@ -29,8 +29,19 @@ class BackupCodes:
             for _ in range(code_length):
                 _code += str(random.choice(pool))
             code_list.append(_code)
-
         self.unused_codes = [code_list]
-        self.used_codes = []
+        self.unused_codes = []
+        return code_list
 
+    def check_code(self, given: int or str, strict: bool = True) -> bool:
+        given = str(given)
+        if given in self.unused_codes:
+            self.unused_codes.pop(self.unused_codes.index(given))
+            self.used_codes += given
+        elif given in self.unused_codes:
+            if strict:
+                return False
+            elif not strict:
+                return True
+        return False
 

@@ -4,16 +4,17 @@ import smtplib
 import datetime
 import twilio.rest as twil
 
+
 class TwoFA:
     def __init__(self,
                  trys=3,
                  digits=6,
                  numsonly=True,
-                 sid=os.environ['TwillioSID'],
-                 tokensid=os.environ['Twilliotoken'],
+                 sid=1, #os.environ['TwillioSID'],
+                 tokensid=1, #os.environ['Twilliotoken'],
                  default_smtp_server="smtp.gmail.com",
                  gmail_user='joshuahimmens@gmail.com',
-                 gmail_password=os.environ['gmailpassword'],
+                 gmail_password= 1,#os.environ['gmailpassword'],
                  default_name='Joshua Himmens'):
         self.sid = sid
         self.tokensid = tokensid
@@ -43,7 +44,7 @@ class TwoFA:
         self._gmail_password = gmail_password
         self._default_name = default_name
 
-    def textauth(self, phonenum: str = None, kind=1, car=None):
+    def textauth(self, phonenum: str = None, kind=1, car=None) -> bool:
         self.orginalnum = phonenum
         self._gen_code()
         '''
@@ -68,6 +69,7 @@ class TwoFA:
             if len(phonenum) == 11:
                 phonenum = phonenum[1:]
             self.passed = self.email_text_auth(carier=car, number=phonenum)
+        return True
 
     def _gen_code(self):
         code = ''
@@ -86,7 +88,7 @@ class TwoFA:
                     code += str(num)
         self._code = code
 
-    def twilliotext(self, number):
+    def twilliotext(self, number) -> bool:
         try:
             print(twil.Client(self.sid,
                               self.tokensid).messages.create(body=self._code,
@@ -109,7 +111,7 @@ class TwoFA:
         print(dns)
         # todo: work with daniel on VIOP lookup
 
-    def email_text_auth(self, carier, number):
+    def email_text_auth(self, carier, number) -> bool:
         self._gen_code()
         try:
             app = self.carriers[carier]
@@ -120,14 +122,15 @@ class TwoFA:
         finalemail = number + app
         message = self._code
         self.passed = self.sendemail(message, finalemail)
+        return True
 
-    def checksend(self):
+    def checksend(self) -> bool:
         if self.passed:
             return True
         else:
             return False
 
-    def sendemail(self, message, destination, standardemail=False):
+    def sendemail(self, message, destination, standardemail=False) -> bool:
         server = smtplib.SMTP_SSL(f'{self._default_smtp_server}', 465)
         if standardemail:
             emailintro = "Hi,"
@@ -149,12 +152,12 @@ class TwoFA:
             print("email failed" + str(e))
             return False
 
-    def check_code(self, checker: str = None):
+    def check_code(self, checker: str = None) -> bool:
         if self.trys > 0:
             self.trys -= 1
         else:
             print('LIMIT REACHED')
-            return 'LIMIT REACHED'
+            raise NotImplementedError
         if checker is None:
             checker = input('authentication code: ')
         checker = checker.upper()

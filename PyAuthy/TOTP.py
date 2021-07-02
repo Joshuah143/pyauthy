@@ -5,10 +5,16 @@ import hmac
 import datetime
 from qrcode import make
 from base64 import b32decode
+import Backupcodes
 
 
 class TOTP:
-    def __init__(self, key: str = 0, issuer='JoshuaH', username='joshua.himmens@icloud.com'):
+    def __init__(self,
+                 key: str = 0,
+                 issuer: str = 'JoshuaH',
+                 username: str = 'joshua.himmens@icloud.com',
+                 used_backup_codes: list = None,
+                 unused_backup_codes: list = None):
         if key == 0:
             self.gentotpkey()
         else:
@@ -18,13 +24,27 @@ class TOTP:
         self.issuer = issuer
         self.user = username
         self.digest = hashlib.sha1
+        self.backup = Backupcodes.BackupCodes(unused_backup_codes, used_backup_codes)
+
+    def check_otp(self, given: str or int) -> bool:
+        given = str(given)
+        if given in self.genthree:
+            return True
+        elif self.backup.check_code(given):
+            return True
+        else:
+            return False
+
+    def setup(self) -> list[str, list[str]]:
+
+        return [self.key, self.backup.unused_codes]
 
     @property
-    def getkey(self):
+    def getkey(self) -> str:
         return self.key
 
     @property
-    def genthree(self):
+    def genthree(self) -> list:
         return [self.generate_otp(-1), self.generate_otp(), self.generate_otp(1)]
 
     def gentotpkey(self):
@@ -35,19 +55,19 @@ class TOTP:
         print(key)
         self.key = key
 
-    def qrcode(self):
+    def qrcode(self) -> str:
         with open('QR_code.png', 'w'):
             p = make(self.link)
             p.save('test.png')  # save png QR code
         return self.link
 
     @property
-    def link(self):
+    def link(self) -> str:
         return f'otpauth://totp/{self.user}?secret={self.key}&issuer={self.issuer}' \
                f'&algorithm=SHA1&digits={self.digits}&period={self.period}'
 
     @property
-    def count(self):
+    def count(self) -> int:
         return int(time.mktime(datetime.datetime.now().timetuple()) // self.period)
 
     def generate_otp(self, offset: int = 0) -> str:
@@ -70,5 +90,5 @@ class TOTP:
             secret += '=' * (8 - missing_padding)
         return b32decode(secret, casefold=True)
 
-    def int_to_bytestring(self, offset: int = 0, padding: int = 8):
+    def int_to_bytestring(self, offset: int = 0, padding: int = 8) -> bytes:
         return (self.count + offset).to_bytes(padding, 'big')
