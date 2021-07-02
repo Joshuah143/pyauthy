@@ -1,3 +1,12 @@
+import hashlib
+import random
+import time
+import hmac
+import datetime
+from qrcode import make
+from base64 import b32decode
+
+
 class TOTP:
     def __init__(self, key: str = 0, issuer='JoshuaH', username='joshua.himmens@icloud.com'):
         if key == 0:
