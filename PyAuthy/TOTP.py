@@ -36,7 +36,7 @@ class TOTP:
             return False
 
     def setup(self) -> list[str, list[str]]:
-
+        # todo: Fix this thing
         return [self.key, self.backup.unused_codes]
 
     @property
