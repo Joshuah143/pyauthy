@@ -1,10 +1,6 @@
 import pyauthy
 import json
 
-usersexample = {
-    'user1': ['pass1', 'email1', 'EXAMPLETOTPKEYEXAMPLETOTPKEYII'],
-    'user2': ['pass1', 'email1', 'EXAMPLETOTPKEYEXAMPLETOTPKEYII']}
-
 
 def login(users):
     user = input('Username:')
@@ -26,16 +22,16 @@ def login(users):
     return False, user
 
 
-def add_user(users: list):
+def add_user(_users: list):
     totp = pyauthy.totp_handler.totp()
     totp.setup()
-    user = input('Username:\t')
+    _user = input('Username:\t')
     password = input('Password:\t')
     email = input('Email:\t')
     print(f'Your link: {totp.qrcode("Example_QR_code.png")} '
           f'(image available in file)\nYour TOTP key: {totp.key}'
           f'\nYour backup codes:{totp.backup.unused_codes}')
-    addition = {user: [password, email, totp.key, totp.backup.unused_codes]}
+    addition = {_user: [password, email, totp.key, totp.backup.unused_codes]}
     print('USER CREATED SUCCESSFULLY')
     return {**users, **addition}
 
