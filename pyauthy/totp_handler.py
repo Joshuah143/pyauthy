@@ -1,3 +1,4 @@
+import binascii
 import hashlib
 import random
 import time
@@ -5,7 +6,7 @@ import hmac
 import datetime
 from qrcode import make
 from base64 import b32decode
-import backupcodes
+from pyauthy import backupcodes
 
 
 class totp:
@@ -15,6 +16,13 @@ class totp:
                  username: str = 'joshua.himmens@icloud.com',
                  used_backup_codes: list = None,
                  unused_backup_codes: list = None):
+        """
+        :param key:
+        :param issuer:
+        :param username:
+        :param used_backup_codes:
+        :param unused_backup_codes:
+        """
         if key == 0:
             self.gentotpkey()
         else:
@@ -24,9 +32,13 @@ class totp:
         self.issuer = issuer
         self.user = username
         self.digest = hashlib.sha1
-        self.backup = backupcodes.backupcodes(unused_backup_codes, used_backup_codes)
+        self.backup = backupcodes(unused_backup_codes, used_backup_codes)
 
     def check_otp(self, given: str or int) -> bool:
+        """
+        :param given:
+        :return:
+        """
         given = str(given)
         if given in self.genthree:
             return True
@@ -41,36 +53,59 @@ class totp:
 
     @property
     def getkey(self) -> str:
+        """
+        :return:
+        """
         return self.key
 
     @property
     def genthree(self) -> list:
+        """
+        :return:
+        """
         return [self.generate_otp(-1), self.generate_otp(), self.generate_otp(1)]
 
     def gentotpkey(self):
+        """
+        :return:
+        """
         key = ''
-        choices = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789')
+        choices = list('AIQYBJRZCKS2DLT3EMU4FNV5GOW6HPX7')
         for _ in range(32):
             key += random.choice(choices)
-        print(key)
         self.key = key
+        return self.key
 
-    def qrcode(self) -> str:
-        with open('QR_code.png', 'w'):
-            p = make(self.link)
-            p.save('test.png')  # save png QR code
+    def qrcode(self, filename: str = 'QR_code.png') -> str:
+        """
+        :return:
+        """
+        if not filename.endswith('.png'):
+            filename += '.png'
+        p = make(self.link)
+        p.save(filename)  # save png QR code
         return self.link
 
     @property
     def link(self) -> str:
+        """
+        :return:
+        """
         return f'otpauth://totp/{self.user}?secret={self.key}&issuer={self.issuer}' \
                f'&algorithm=SHA1&digits={self.digits}&period={self.period}'
 
     @property
     def count(self) -> int:
+        """
+        :return:
+        """
         return int(time.mktime(datetime.datetime.now().timetuple()) // self.period)
 
     def generate_otp(self, offset: int = 0) -> str:
+        """
+        :param offset:
+        :return:
+        """
         hasher = hmac.new(self.byte_secret(), self.int_to_bytestring(offset=offset), self.digest)
         hmac_hash = bytearray(hasher.digest())
         offset = hmac_hash[-1] & 0xf
@@ -84,11 +119,22 @@ class totp:
         return str_code
 
     def byte_secret(self):
+        """
+        :return:
+        """
         secret = self.key
         missing_padding = len(self.key) % 8
         if missing_padding != 0:
             secret += '=' * (8 - missing_padding)
-        return b32decode(secret, casefold=True)
+        try:
+            return b32decode(secret, casefold=True)
+        except binascii.Error:
+            raise KeyError
 
     def int_to_bytestring(self, offset: int = 0, padding: int = 8) -> bytes:
+        """
+        :param offset:
+        :param padding:
+        :return:
+        """
         return (self.count + offset).to_bytes(padding, 'big')
