@@ -133,8 +133,10 @@ class totp:
 
     def int_to_bytestring(self, offset: int = 0, padding: int = 8) -> bytes:
         """
-        :param offset:
-        :param padding:
-        :return:
+        :param offset: the offset argument changes what the count will be used when calculating the TOTP code.
+         for example if you set it to one it will find the next code and -1 will find the last one; no matter
+         what the period of each code is
+        :param padding: determines the total number of bytes that are returned
+        :return: returns the byte representation of the count plus the offset
         """
         return (self.count + offset).to_bytes(padding, 'big')

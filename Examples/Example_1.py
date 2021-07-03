@@ -11,7 +11,8 @@ def login(users):
             except IndexError:
                 codes = None
             try:
-                if pyauthy.totp_handler.totp(key=users[user][2], unused_backup_codes=codes).check_otp(input('TOTP key:')):
+                if pyauthy.totp_handler.totp(key=users[user][2],
+                                             unused_backup_codes=codes).check_otp(input('TOTP key:')):
                     return True, user
             except KeyError:
                 print('INVALID TOTP KEY')
