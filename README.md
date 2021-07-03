@@ -6,6 +6,7 @@ To get started go have a look at the example
 
 ### Road map:
  - [ ] Actually finish the module
+ - [ ] Finish type hints and in line documentation 
  - [ ] Create tests module 
  - [ ] Create public release
  - [ ] Publish module
