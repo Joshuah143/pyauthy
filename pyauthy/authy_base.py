@@ -101,8 +101,9 @@ class two_factor:
 
     def email_auth(self, email):
         self._gen_code()
-        self.passed = self.sendemail(message=self._code, destination=email)
-        # todo: work on making this pretty
+        self.passed = self.sendemail(message=f'Your Authentication code is: {self._code}',
+                                     destination=email,
+                                     standard_email=True)
 
     def check_number(self, number='15874340118'):
         nuber = reversed(list(number))
