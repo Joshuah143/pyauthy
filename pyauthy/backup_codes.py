@@ -22,36 +22,31 @@ class backupcodes:
     def gencodes(self, number_of_codes: int = 6,
                  code_length: int = 8,
                  nums: bool = True,
-                 alpha: bool = False) -> list:
+                 alpha: bool = False) -> list[str]:
         """
-        :param number_of_codes:
-        :param code_length:
-        :param nums:
-        :param alpha:
-        :return:
+        :param number_of_codes: the number of 2FA backup codes to be generated
+        :param code_length: length of each individual code
+        :param nums: if numbers should be in the codes
+        :param alpha: if there chould be letters in the codes
+        :return: a list of strings that are the backup codes
         """
         if (not nums) and (not alpha):
             raise NotImplementedError
         pool = []
-        code_list = []
         if nums:
             pool += list('1234567890')
         if alpha:
             pool += list('qwertyuiopasdfghjklzxcvbnm')
-        for _ in range(number_of_codes):
-            _code = ''
-            for _ in range(code_length):
-                _code += str(random.choice(pool))
-            code_list.append(_code)
-        self.unused_codes = [code_list]
-        self.unused_codes = []
+        code_list = [''.join(random.choice(pool) for _ in range(code_length)) for _ in range(number_of_codes)]
+        self.unused_codes = code_list
+        self.used_codes = []
         return code_list
 
     def check_code(self, given: int or str, strict: bool = True) -> bool:
         """
-        :param given:
-        :param strict:
-        :return:
+        :param given: the code that is checked against the real codes and backups
+        :param strict: if old backup codes will be accepted
+        :return: return weather or not the 2FA method was a success so if the code was wrong it will return false
         """
         given = str(given)
         if given in self.unused_codes:

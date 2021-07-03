@@ -67,12 +67,10 @@ class totp:
 
     def gentotpkey(self):
         """
-        :return:
+        :return: returns the TOTP key AKA the secret
         """
-        key = ''
-        choices = list('AIQYBJRZCKS2DLT3EMU4FNV5GOW6HPX7')
-        for _ in range(32):
-            key += random.choice(choices)
+        choices = list('234567ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        key = ''.join(random.choice(choices) for _ in range(32))
         self.key = key
         return self.key
 

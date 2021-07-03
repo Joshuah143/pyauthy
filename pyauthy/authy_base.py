@@ -10,11 +10,11 @@ class two_factor:
                  trys: int = 3,
                  digits: int = 6,
                  numsonly: bool = True,
-                 sid: str = 1, #os.environ['TwillioSID'],
-                 tokensid: str = 1, #os.environ['Twilliotoken'],
+                 sid: str = None,
+                 tokensid: str = None,
                  default_smtp_server: str = "smtp.gmail.com",
                  gmail_user: str = 'joshuahimmens@gmail.com',
-                 gmail_password: str = 1,#os.environ['gmailpassword'],
+                 gmail_password: str = None,
                  default_name: str = 'Joshua Himmens'):
         self.sid = sid
         self.tokensid = tokensid
@@ -132,6 +132,12 @@ class two_factor:
             return False
 
     def sendemail(self, message: str, destination: str, standard_email: bool = False) -> bool:
+        """
+        :param message: body of the message
+        :param destination: destination email address
+        :param standard_email: if the email will just be plain text or if it will include intros and the like
+        :return: the state of the email send, so if it fails to send it will return false
+        """
         server = smtplib.SMTP_SSL(f'{self._default_smtp_server}', 465)
         if standard_email:
             email_intro = "Hi,"
@@ -154,6 +160,10 @@ class two_factor:
             return False
 
     def check_code(self, checker: str = None) -> bool:
+        """
+        :param checker: what is going to be checked aganst; the user imputted code
+        :return: the state of the code, if it was correct or not
+        """
         if self.trys > 0:
             self.trys -= 1
         else:
